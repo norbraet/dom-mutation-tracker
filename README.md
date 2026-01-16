@@ -8,13 +8,13 @@ A lightweight JavaScript utility that tracks DOM mutations in real-time, providi
 
 ## Features
 
-- **🎯 Real-time DOM Monitoring** - Tracks all DOM changes as they happen
-- **🎨 Visual Highlighting** - Changed elements flash red for easy identification
-- **📊 Clean Console Logging** - Organized, collapsible console output
-- **🔍 Multiple Mutation Types** - Tracks attributes, child nodes, and text changes
-- **🛡️ Loop Prevention** - Intelligent filtering to avoid infinite loops
-- **⚡ Zero Dependencies** - Pure JavaScript, no external libraries
-- **🎮 Interactive API** - Simple functions to control tracking
+- **Real-time DOM Monitoring** - Tracks all DOM changes as they happen
+- **Visual Highlighting** - Changed elements flash red for easy identification
+- **Clean Console Logging** - Organized, collapsible console output
+- **Multiple Mutation Types** - Tracks attributes, child nodes, and text changes
+- **Loop Prevention** - Intelligent filtering to avoid infinite loops
+- **Zero Dependencies** - Pure JavaScript, no external libraries
+- **Interactive API** - Simple functions to control tracking
 
 ## Quick Start
 

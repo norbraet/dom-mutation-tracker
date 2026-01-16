@@ -1,12 +1,12 @@
 # DOM Mutation Tracker
 
-🔍 A lightweight JavaScript utility that tracks DOM mutations in real-time, providing clean console logging and visual highlighting of changed elements.
+A lightweight JavaScript utility that tracks DOM mutations in real-time, providing clean console logging and visual highlighting of changed elements.
 
 ![Chrome DevTools Compatible](https://img.shields.io/badge/Chrome%20DevTools-Compatible-green)
 ![No Dependencies](https://img.shields.io/badge/Dependencies-None-blue)
 ![Pure JavaScript](https://img.shields.io/badge/Language-JavaScript-yellow)
 
-## ✨ Features
+## Features
 
 - **🎯 Real-time DOM Monitoring** - Tracks all DOM changes as they happen
 - **🎨 Visual Highlighting** - Changed elements flash red for easy identification
@@ -16,7 +16,7 @@
 - **⚡ Zero Dependencies** - Pure JavaScript, no external libraries
 - **🎮 Interactive API** - Simple functions to control tracking
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Chrome DevTools Snippet (Recommended)
 
@@ -38,7 +38,7 @@ fetch("dom-mutation-tracker.js")
   .then((script) => eval(script));
 ```
 
-## 📋 Usage Examples
+## Usage Examples
 
 ### Basic Usage
 
@@ -63,13 +63,13 @@ startMutationTracker(); // Resume tracking
 ### Console Output Examples
 
 ```
-🔧 class → button.primary     // Attribute change
-➕ Added → div.container       // Child nodes added
-➖ Removed → ul.list          // Child nodes removed
-📝 Text → span "Hello..."      // Text content changed
+class → button.primary     // Attribute change
+Added → div.container       // Child nodes added
+Removed → ul.list          // Child nodes removed
+Text → span "Hello..."      // Text content changed
 ```
 
-## ⚙️ Configuration
+## Configuration
 
 Customize the tracker by modifying the `CONFIG` object:
 
@@ -83,7 +83,7 @@ const CONFIG = {
 };
 ```
 
-## 🎯 What Gets Tracked
+## What Gets Tracked
 
 ### Attribute Changes
 
@@ -96,7 +96,7 @@ const CONFIG = {
 **Example Output:**
 
 ```
-🔧 style → div.modal
+style → div.modal
   Element: <div class="modal">
   Attribute: style
   Old: display: none
@@ -113,7 +113,7 @@ const CONFIG = {
 **Example Output:**
 
 ```
-➕ Added → ul.menu
+Added → ul.menu
   Parent: <ul class="menu">
   Added: [<li>New Item</li>]
   Time: 14:23:16
@@ -127,7 +127,7 @@ const CONFIG = {
 **Example Output:**
 
 ```
-📝 Text → span "Loading complete"
+Text → span "Loading complete"
   Text Node: #text
   Parent: <span class="status">
   Old: "Loading..."
@@ -135,7 +135,7 @@ const CONFIG = {
   Time: 14:23:17
 ```
 
-## 🛠️ Common Use Cases
+## Common Use Cases
 
 ### Debugging Dynamic Content
 
@@ -167,7 +167,7 @@ startMutationTracker();
 stopMutationTracker();
 ```
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
 ### High Mutation Count
 
@@ -189,7 +189,7 @@ If you see too many mutations:
 - Stop tracking when not needed: `stopMutationTracker()`
 - Limit `maxLogEntries` for long sessions
 
-## 🚫 Limitations
+## Limitations
 
 - Only tracks mutations within `document.body`
 - Doesn't track mutations in iframes
@@ -197,7 +197,7 @@ If you see too many mutations:
 - Limited to modern browsers supporting `MutationObserver`
 - Large numbers of rapid mutations may impact performance
 
-## 🌐 Browser Compatibility
+## Browser Compatibility
 
 - ✅ Chrome/Chromium (all recent versions)
 - ✅ Firefox (all recent versions)
@@ -205,7 +205,7 @@ If you see too many mutations:
 - ✅ Edge (all recent versions)
 - ❌ Internet Explorer (not supported)
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please feel free to:
 
@@ -214,11 +214,11 @@ Contributions are welcome! Please feel free to:
 - Submit pull requests
 - Improve documentation
 
-## 📄 License
+## License
 
 This project is released under the MIT License. Feel free to use it in personal and commercial projects.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - Built using the native `MutationObserver` API
 - Inspired by the need for better DOM debugging tools
@@ -226,6 +226,6 @@ This project is released under the MIT License. Feel free to use it in personal 
 
 ---
 
-**Happy DOM debugging! 🚀**
+**Happy DOM debugging! **
 
 _Found this useful? Give it a ⭐ and share with fellow developers!_

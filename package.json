@@ -1,0 +1,27 @@
+{
+  "name": "dom-mutation-tracker",
+  "version": "1.0.0",
+  "description": "A Chrome DevTools snippet that tracks DOM mutations, logs them cleanly in the console, and visually highlights changed elements in real time.",
+  "main": "dom-mutation-tracker.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/norbraet/dom-mutation-tracker.git"
+  },
+  "author": "Norbert Balaž",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/norbraet/dom-mutation-tracker/issues"
+  },
+  "homepage": "https://github.com/norbraet/dom-mutation-tracker#readme",
+  "engines": {
+    "node": ">=24.11"
+  },
+  "devDependencies": {
+    "prettier": "3.8.0"
+  }
+}

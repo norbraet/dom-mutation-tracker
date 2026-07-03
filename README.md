@@ -214,6 +214,13 @@ Contributions are welcome! Please feel free to:
 - Submit pull requests
 - Improve documentation
 
+## Roadmap
+
+The project is evolving from a DevTools snippet into an installable,
+framework-agnostic frontend debugging tool with an isolated live UI panel. See
+the [product roadmap](docs/ROADMAP.md) for the architecture direction,
+milestones, and recommended implementation order.
+
 ## License
 
 This project is released under the MIT License. Feel free to use it in personal and commercial projects.

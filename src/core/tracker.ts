@@ -16,7 +16,7 @@ const DEFAULT_DEDUPE_WINDOW_MS = 50;
 const TRACKER_HIGHLIGHT_CLASS = "mutation-tracker-highlight";
 
 interface ResolvedTrackerOptions {
-  readonly root?: Node;
+  readonly root?: Node | string;
   readonly maxEvents: number;
   readonly dedupeWindowMs: number;
   readonly onError: (error: TrackerError) => void;
@@ -28,6 +28,10 @@ function isNode(value: unknown): value is Node {
     value !== null &&
     typeof (value as Node).nodeType === "number"
   );
+}
+
+function isObservableRoot(node: Node): boolean {
+  return node.nodeType === 1 || node.nodeType === 9 || node.nodeType === 11;
 }
 
 function defaultErrorReporter(error: TrackerError): void {
@@ -46,8 +50,12 @@ function validateOptions(
 
   const candidate = options ?? {};
 
-  if (candidate.root !== undefined && !isNode(candidate.root)) {
-    throw new TypeError("Tracker root must be a DOM Node");
+  if (
+    candidate.root !== undefined &&
+    !isNode(candidate.root) &&
+    typeof candidate.root !== "string"
+  ) {
+    throw new TypeError("Tracker root must be a DOM Node or selector string");
   }
 
   const maxEvents = candidate.maxEvents ?? DEFAULT_MAX_EVENTS;
@@ -81,6 +89,56 @@ function getMutationObserver(root: Node): typeof MutationObserver | undefined {
   const document =
     root.nodeType === 9 ? (root as Document) : root.ownerDocument;
   return document?.defaultView?.MutationObserver ?? globalThis.MutationObserver;
+}
+
+function resolveSelectorRoot(selector: string): Element {
+  const document = globalThis.document;
+  if (!document) {
+    throw new TrackerError(
+      "MISSING_ROOT",
+      `No document is available to resolve observation root selector "${selector}"`,
+    );
+  }
+
+  let root: Element | null;
+  try {
+    root = document.querySelector(selector);
+  } catch (error) {
+    throw new TrackerError(
+      "INVALID_ROOT",
+      `Observation root selector is invalid: "${selector}"`,
+      error,
+    );
+  }
+
+  if (!root) {
+    throw new TrackerError(
+      "MISSING_ROOT",
+      `No observation root matches selector "${selector}"`,
+    );
+  }
+
+  return root;
+}
+
+function resolveRoot(root: Node | string | undefined): Node {
+  const resolvedRoot =
+    typeof root === "string"
+      ? resolveSelectorRoot(root)
+      : (root ?? globalThis.document?.body);
+
+  if (!resolvedRoot) {
+    throw new TrackerError("MISSING_ROOT", "No observation root is available");
+  }
+
+  if (!isObservableRoot(resolvedRoot)) {
+    throw new TrackerError(
+      "INVALID_ROOT",
+      "Tracker root must be an Element, Document, or DocumentFragment",
+    );
+  }
+
+  return resolvedRoot;
 }
 
 function hasTrackerClass(value: string | null): boolean {
@@ -254,13 +312,7 @@ export function createTracker(options?: TrackerOptions): Tracker {
   function start(): void {
     if (observer) return;
 
-    const root = resolvedOptions.root ?? globalThis.document?.body;
-    if (!root) {
-      throw new TrackerError(
-        "MISSING_ROOT",
-        "No observation root is available",
-      );
-    }
+    const root = resolveRoot(resolvedOptions.root);
 
     const Observer = getMutationObserver(root);
     if (!Observer) {

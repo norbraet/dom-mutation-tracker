@@ -1,5 +1,6 @@
 export type TrackerErrorCode =
   | "MISSING_ROOT"
+  | "INVALID_ROOT"
   | "UNSUPPORTED_ENVIRONMENT"
   | "NORMALIZATION_FAILED"
   | "LISTENER_FAILED";
@@ -57,7 +58,7 @@ export type TrackerMutationEvent =
 export type TrackerEventListener = (event: TrackerMutationEvent) => void;
 
 export interface TrackerOptions {
-  readonly root?: Node;
+  readonly root?: Node | string;
   readonly maxEvents?: number;
   readonly dedupeWindowMs?: number;
   readonly onError?: (error: TrackerError) => void;

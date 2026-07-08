@@ -44,6 +44,25 @@ async function flushMutations(): Promise<void> {
   await new Promise<void>((resolve) => setImmediate(resolve));
 }
 
+function setGlobalDocument(document: Document): () => void {
+  const originalDescriptor = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "document",
+  );
+  Object.defineProperty(globalThis, "document", {
+    configurable: true,
+    value: document,
+  });
+
+  return () => {
+    if (originalDescriptor) {
+      Object.defineProperty(globalThis, "document", originalDescriptor);
+    } else {
+      Reflect.deleteProperty(globalThis, "document");
+    }
+  };
+}
+
 void test("generates useful selectors and descriptions for HTML, SVG, and text", () => {
   const dom = new JSDOM(`<!doctype html><body>
     <div id="normal" class="card primary"><span>text</span></div>
@@ -223,6 +242,99 @@ void test("start, stop, restart, clear, and subscriptions are idempotent", async
   dom.window.close();
 });
 
+void test("observes only the configured element root and descendants", async () => {
+  const dom = new JSDOM(`<!doctype html><body>
+    <section id="scope"><div id="inside"></div></section>
+    <div id="outside"></div>
+  </body>`);
+  const scope = requireElement(dom.window.document, "#scope");
+  const inside = requireElement(dom.window.document, "#inside");
+  const outside = requireElement(dom.window.document, "#outside");
+  const tracker = createTracker({ root: scope, dedupeWindowMs: 0 });
+
+  tracker.start();
+  inside.setAttribute("data-state", "tracked");
+  outside.setAttribute("data-state", "ignored");
+  await flushMutations();
+
+  const events = tracker.getEvents();
+  assert.equal(events.length, 1);
+  assert.equal(events[0]?.target.selector, "div#inside:nth-child(1)");
+
+  tracker.stop();
+  dom.window.close();
+});
+
+void test("accepts document and shadow roots supported by MutationObserver", async () => {
+  const dom = new JSDOM(`<!doctype html><body>
+    <div id="document-target"></div>
+    <div id="shadow-host"></div>
+  </body>`);
+  const documentTarget = requireElement(
+    dom.window.document,
+    "#document-target",
+  );
+  const shadowHost = requireElement(dom.window.document, "#shadow-host");
+  const shadowRoot = shadowHost.attachShadow({ mode: "open" });
+  const shadowTarget = dom.window.document.createElement("span");
+  shadowTarget.id = "shadow-target";
+  shadowRoot.appendChild(shadowTarget);
+
+  const documentTracker = createTracker({
+    root: dom.window.document,
+    dedupeWindowMs: 0,
+  });
+  documentTracker.start();
+  documentTarget.setAttribute("data-state", "tracked");
+  await flushMutations();
+  assert.equal(documentTracker.getEvents().length, 1);
+  documentTracker.stop();
+
+  const shadowTracker = createTracker({ root: shadowRoot, dedupeWindowMs: 0 });
+  shadowTracker.start();
+  shadowTarget.setAttribute("data-state", "tracked");
+  documentTarget.setAttribute("data-outside-shadow", "ignored");
+  await flushMutations();
+  const shadowEvents = shadowTracker.getEvents();
+  assert.equal(shadowEvents.length, 1);
+  assert.equal(shadowEvents[0]?.target.description, "span#shadow-target");
+
+  shadowTracker.stop();
+  dom.window.close();
+});
+
+void test("resolves selector roots at start and preserves them across restarts", async () => {
+  const dom = new JSDOM(`<!doctype html><body>
+    <section id="scope"><div id="inside"></div></section>
+    <div id="outside"></div>
+  </body>`);
+  const restoreDocument = setGlobalDocument(dom.window.document);
+  const inside = requireElement(dom.window.document, "#inside");
+  const outside = requireElement(dom.window.document, "#outside");
+  const tracker = createTracker({ root: "#scope", dedupeWindowMs: 0 });
+
+  try {
+    tracker.start();
+    inside.setAttribute("data-state", "first");
+    await flushMutations();
+    assert.equal(tracker.getEvents().length, 1);
+
+    tracker.stop();
+    outside.setAttribute("data-state", "ignored");
+    await flushMutations();
+    assert.equal(tracker.getEvents().length, 1);
+
+    tracker.start();
+    inside.setAttribute("data-state", "second");
+    await flushMutations();
+    assert.equal(tracker.getEvents().length, 2);
+  } finally {
+    tracker.stop();
+    restoreDocument();
+    dom.window.close();
+  }
+});
+
 void test("isolates record and listener failures without stopping later events", async () => {
   const dom = new JSDOM(
     '<!doctype html><body><div id="unusual"></div><div id="later"></div></body>',
@@ -262,12 +374,49 @@ void test("validates options and fails explicitly without a DOM root", () => {
   assert.throws(() => createTracker({ maxEvents: 0 }), RangeError);
   assert.throws(() => createTracker({ dedupeWindowMs: -1 }), RangeError);
   assert.throws(() => createTracker({ root: {} as Node }), TypeError);
+  const dom = new JSDOM("<!doctype html><body>text</body>");
+  try {
+    assert.throws(
+      () =>
+        createTracker({
+          root: dom.window.document.body.firstChild as Node,
+        }).start(),
+      (error: unknown) => {
+        return error instanceof TrackerError && error.code === "INVALID_ROOT";
+      },
+    );
+  } finally {
+    dom.window.close();
+  }
   assert.throws(
     () => createTracker().start(),
     (error: unknown) => {
       return error instanceof TrackerError && error.code === "MISSING_ROOT";
     },
   );
+});
+
+void test("fails explicitly for missing and invalid selector roots", () => {
+  const dom = new JSDOM(`<!doctype html><body><div id="target"></div></body>`);
+  const restoreDocument = setGlobalDocument(dom.window.document);
+
+  try {
+    assert.throws(
+      () => createTracker({ root: "#missing" }).start(),
+      (error: unknown) => {
+        return error instanceof TrackerError && error.code === "MISSING_ROOT";
+      },
+    );
+    assert.throws(
+      () => createTracker({ root: "[" }).start(),
+      (error: unknown) => {
+        return error instanceof TrackerError && error.code === "INVALID_ROOT";
+      },
+    );
+  } finally {
+    restoreDocument();
+    dom.window.close();
+  }
 });
 
 void test("panel presentation highlights, logs, and cleans up deterministically", async (t) => {

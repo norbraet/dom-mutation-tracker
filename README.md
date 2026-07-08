@@ -40,6 +40,15 @@ unsubscribe();
 tracker.stop();
 ```
 
+To scope tracking to one subtree, pass a root node or a selector. Selectors are
+resolved when `start()` runs so the target can be created after the tracker
+instance:
+
+```ts
+const tracker = createTracker({ root: "#app" });
+tracker.start();
+```
+
 ## Development-only integration
 
 Installing the package as a `devDependency` does not by itself keep it out of a
@@ -103,7 +112,7 @@ Options:
 
 | Option           | Default         | Description                                      |
 | ---------------- | --------------- | ------------------------------------------------ |
-| `root`           | `document.body` | DOM node observed after `start()`                |
+| `root`           | `document.body` | DOM node or selector observed after `start()`    |
 | `maxEvents`      | `100`           | Positive integer event-history limit             |
 | `dedupeWindowMs` | `50`            | Non-negative duplicate suppression window        |
 | `onError`        | `console.error` | Receives normalized record and listener failures |
@@ -117,8 +126,19 @@ The returned tracker provides:
 - `subscribe(listener)` — receive events and return an idempotent unsubscribe
   function.
 
-Invalid configuration fails synchronously. Starting without an available root
-or `MutationObserver` throws a `TrackerError` with a stable error code.
+The root may be an `Element`, `Document`, or `ShadowRoot`/`DocumentFragment`.
+Only the configured root and its descendants are observed. Changing roots
+requires creating a new tracker instance; `stop()`/`start()` preserves the root
+configured at creation time.
+
+Use `root` for coarse subtree scoping. Fine-grained include/exclude selector
+filters and automatic discovery of open Shadow DOM roots are separate planned
+capabilities; for now, pass an open `ShadowRoot` explicitly when that is the
+subtree you want to inspect.
+
+Invalid configuration fails synchronously. Starting without an available root,
+with a selector that matches nothing, with an unsupported root node, or without
+`MutationObserver` throws a `TrackerError` with a stable error code.
 
 ## Event model
 
@@ -189,8 +209,11 @@ workloads, initial budgets, and interpretation rules.
 
 ## Limitations
 
-- Observation defaults to `document.body`; pass `root` for another DOM node.
-- Closed Shadow DOM and iframe contents are not observed automatically.
+- Observation defaults to `document.body`; pass `root` for another DOM node or
+  selector.
+- Closed Shadow DOM and iframe contents are not observed automatically. Open
+  `ShadowRoot` instances can be observed explicitly; automatic discovery is
+  tracked separately.
 - Selectors describe the target at mutation-processing time and may become
   stale after later DOM changes.
 - Large mutation volumes still have runtime cost despite bounded history and

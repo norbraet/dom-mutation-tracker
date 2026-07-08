@@ -86,7 +86,7 @@ export interface Tracker {
 export type TrackerEventListener = (event: TrackerMutationEvent) => void;
 
 export interface TrackerOptions {
-  root?: Node;
+  root?: Node | string;
   maxEvents?: number;
   dedupeWindowMs?: number;
   onError?: (error: TrackerError) => void;
@@ -100,9 +100,17 @@ Defaults:
 - `dedupeWindowMs`: `50`
 - `onError`: report to `console.error`
 
-`root` is part of the contract here. Issue #5 expands configurable-root
-behavior and coverage. More observation and filtering options may be added by
-their owning issues without changing the lifecycle API.
+`root` accepts an `Element`, `Document`, `ShadowRoot`/`DocumentFragment`, or a
+CSS selector string. Selector roots are resolved when `start()` runs and fail
+with a `TrackerError` if no element matches or the selector is invalid. A
+tracker observes only the configured root and descendants. Changing roots
+requires creating a new tracker instance; `stop()`/`start()` preserves the root
+configured at creation time. Root scoping is the coarse observation boundary;
+future include/exclude filters will provide finer selector-level filtering
+inside that boundary, and automatic open Shadow DOM discovery remains separate
+from explicitly observing a provided `ShadowRoot`. More observation and
+filtering options may be added by their owning issues without changing the
+lifecycle API.
 
 ### Option ownership
 
@@ -215,6 +223,7 @@ stop later records or listeners. They are reported through `onError` as a
 ```ts
 export type TrackerErrorCode =
   | "MISSING_ROOT"
+  | "INVALID_ROOT"
   | "UNSUPPORTED_ENVIRONMENT"
   | "NORMALIZATION_FAILED"
   | "LISTENER_FAILED";

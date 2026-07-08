@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import type * as TrackerModule from "../../src/index.js";
 
 interface BrowserEvent {
   readonly type: "attributes" | "childList" | "characterData";
@@ -120,4 +121,69 @@ test("handles SVG targets with valid selectors in a real browser", async ({
   expect(await page.locator(event?.target.selector ?? "unknown").count()).toBe(
     1,
   );
+});
+
+test("observes a selector root without recording outside mutations", async ({
+  page,
+}) => {
+  const events = await page.evaluate(async (): Promise<BrowserEvent[]> => {
+    const { createTracker } =
+      (await import("/dist/index.js")) as typeof TrackerModule;
+    const outside = document.createElement("div");
+    outside.id = "outside-root";
+    document.body.appendChild(outside);
+
+    const tracker = createTracker({
+      root: "#fixture-root",
+      dedupeWindowMs: 0,
+    });
+    tracker.start();
+    document
+      .querySelector("#attribute-target")
+      ?.setAttribute("data-selector-root", "tracked");
+    outside.setAttribute("data-selector-root", "ignored");
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    const recorded = tracker.getEvents() as BrowserEvent[];
+    tracker.stop();
+    outside.remove();
+    return recorded;
+  });
+
+  expect(events).toHaveLength(1);
+  expect(events[0]).toMatchObject({
+    type: "attributes",
+    attributeName: "data-selector-root",
+    target: { description: "div#attribute-target.card" },
+  });
+});
+
+test("observes an explicit ShadowRoot without recording light DOM mutations", async ({
+  page,
+}) => {
+  const events = await page.evaluate(async (): Promise<BrowserEvent[]> => {
+    const { createTracker } =
+      (await import("/dist/index.js")) as typeof TrackerModule;
+    const shadowRoot = document.querySelector("#shadow-host")?.shadowRoot;
+    if (!shadowRoot) throw new Error("Expected fixture ShadowRoot");
+
+    const tracker = createTracker({ root: shadowRoot, dedupeWindowMs: 0 });
+    tracker.start();
+    shadowRoot
+      .querySelector("#shadow-target")
+      ?.setAttribute("data-shadow-root", "tracked");
+    document
+      .querySelector("#attribute-target")
+      ?.setAttribute("data-shadow-root", "ignored");
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    const recorded = tracker.getEvents() as BrowserEvent[];
+    tracker.stop();
+    return recorded;
+  });
+
+  expect(events).toHaveLength(1);
+  expect(events[0]).toMatchObject({
+    type: "attributes",
+    attributeName: "data-shadow-root",
+    target: { description: "span#shadow-target" },
+  });
 });
